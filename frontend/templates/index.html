@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>F1 Weather Analysis</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>F1 Weather Impact Analyzer</h1>
+        
+        <form id="analysisForm">
+            <input type="number" name="year" placeholder="Year (e.g., 2023)" required>
+            <input type="text" name="gp" placeholder="Grand Prix (e.g., Turkey)" required>
+            <input type="text" name="driver" placeholder="Driver (e.g., HAM)" required>
+            <select name="session_type">
+                <option value="R">Race</option>
+                <option value="Q">Qualifying</option>
+            </select>
+            <button type="submit">Analyze</button>
+        </form>
+
+        <div id="results" style="display:none;">
+            <h2>Results</h2>
+            <img id="plot" src="" alt="Weather Impact Plot">
+            <div id="correlations"></div>
+            <div id="error" style="color:red;"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const button = e.target.querySelector('button');
+            button.disabled = true;
+            button.textContent = 'Analyzing...';
+            
+            try {
+                const formData = {
+                    year: parseInt(e.target.year.value),
+                    gp: e.target.gp.value,
+                    driver: e.target.driver.value.toUpperCase(),
+                    session_type: e.target.session_type.value
+                };
+
+                // Changed to relative path
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if(data.success) {
+                    document.getElementById('results').style.display = 'block';
+                    document.getElementById('plot').src = `data:image/png;base64,${data.plot}`;
+                    document.getElementById('correlations').innerHTML = `
+                        <p>Track Temp vs Lap Time: ${data.temp_corr?.toFixed(2) || 'N/A'}</p>
+                        <p>Rainfall vs Lap Time: ${data.rain_corr?.toFixed(2) || 'N/A'}</p>
+                    `;
+                } else {
+                    document.getElementById('error').textContent = data.error;
+                }
+            } catch (error) {
+                document.getElementById('error').textContent = error.message;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Analyze';
+            }
+        });
+    </script>
+</body>
+</html>
