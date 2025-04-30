@@ -1,4 +1,3 @@
-# backend/analysis.py
 import os
 import fastf1
 import pandas as pd
@@ -8,85 +7,115 @@ from io import BytesIO
 import base64
 
 def analyze_weather(year, gp, driver, session_type):
-    """Analyze weather impact for a specific F1 session"""
-    temp_corr = None
-    rain_corr = None
-    plot_url = None
-    
     try:
-        # Set up cache
-        cache_path = './f1_cache'
-        os.makedirs(cache_path, exist_ok=True)
-        fastf1.Cache.enable_cache(cache_path)
+        # Configure cache and matplotlib
+        cache_dir = './f1_cache'
+        os.makedirs(cache_dir, exist_ok=True)
+        fastf1.Cache.enable_cache(cache_dir)
+        plt.switch_backend('Agg')
 
         # Load session data
-        session = fastf1.get_session(year, gp, session_type)
+        session = fastf1.get_session(int(year), gp, session_type)
         session.load(telemetry=True, weather=True)
         
-        # Get driver laps
-        driver_laps = session.laps.pick_drivers([driver]).copy()
+        # Get driver data
+        driver_laps = session.laps.pick_drivers([driver.upper()])
+        weather_data = session.weather_data
         
-        # Merge with weather data
-        merged_data = pd.merge_asof(
+        # Merge and clean data
+        merged = pd.merge_asof(
             driver_laps.sort_values('LapStartTime'),
-            session.weather_data.reset_index().sort_values('Time'),
+            weather_data.reset_index().sort_values('Time'),
             left_on='LapStartTime',
-            right_on='Time',
-            direction='nearest'
-        ).copy()
-
-        # Filter valid laps
-        valid_laps = merged_data[
-            (merged_data['LapTime'].notna()) &
-            (merged_data['IsAccurate'])
+            right_on='Time'
+        )
+        
+        valid_laps = merged[
+            (merged['IsAccurate']) & 
+            (merged['LapTime'].notna())
         ].copy()
-
+        
         if valid_laps.empty:
             return {'success': False, 'error': 'No valid laps found'}
-
-        # Process data
-        valid_laps.loc[:, 'Rainfall'] = valid_laps['Rainfall'].fillna(0)
-        valid_laps.loc[:, 'LapTime_sec'] = valid_laps['LapTime'].dt.total_seconds()
-
+        
+        # Convert data types
+        valid_laps['LapNumber'] = valid_laps['LapNumber'].astype(int)
+        valid_laps['TrackTemp'] = valid_laps['TrackTemp'].astype(float)
+        valid_laps['Rainfall'] = valid_laps['Rainfall'].astype(float)
+        valid_laps['LapTime_sec'] = valid_laps['LapTime'].dt.total_seconds().astype(float)
+        
         # Calculate correlations
         temp_corr = valid_laps['TrackTemp'].corr(valid_laps['LapTime_sec'])
+        rain_corr = valid_laps['Rainfall'].corr(valid_laps['LapTime_sec']) if valid_laps['Rainfall'].nunique() > 1 else None
         
-        if valid_laps['Rainfall'].nunique() > 1:
-            rain_corr = valid_laps['Rainfall'].corr(valid_laps['LapTime_sec'])
-        else:
-            rain_corr = np.nan
-
-        # Generate plot
+        # Generate plot with improved styling
+        plt.style.use('dark_background')
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
+        fig.suptitle(f'{driver} - {gp} {year} ({session_type})\nWeather Impact Analysis', 
+                    fontsize=14, y=1.02, color='white', fontweight='bold')
+
+        # Temperature Plot
+        ax1.plot(valid_laps['LapNumber'], valid_laps['LapTime_sec'], 
+                color='#FF1801', linewidth=2, label='Lap Time')
+        ax1.set_ylabel('Lap Time (seconds)', 
+                      color='white', fontsize=12, fontweight='bold')
+        ax1.tick_params(axis='y', colors='white')
+        ax1.grid(alpha=0.3, linestyle='--')
         
-        # Track Temperature plot
-        ax1.plot(valid_laps['LapNumber'], valid_laps['LapTime_sec'], 'r-')
-        ax1.set_ylabel('Lap Time (s)', color='red')
-        ax1_temp = ax1.twinx()
-        ax1_temp.plot(valid_laps['LapNumber'], valid_laps['TrackTemp'], 'b-')
-        ax1_temp.set_ylabel('Track Temp (°C)', color='blue')
+        ax_temp = ax1.twinx()
+        ax_temp.plot(valid_laps['LapNumber'], valid_laps['TrackTemp'], 
+                    color='#00FFFF', linewidth=2, linestyle=':', label='Track Temperature')
+        ax_temp.set_ylabel('Temperature (°C)', 
+                          color='#00FFFF', fontsize=12, fontweight='bold')
+        ax_temp.tick_params(axis='y', colors='#00FFFF')
 
-        # Rainfall plot
-        ax2.plot(valid_laps['LapNumber'], valid_laps['LapTime_sec'], 'r-')
-        ax2.set_xlabel('Lap Number')
-        ax2.set_ylabel('Lap Time (s)', color='red')
-        ax2_rain = ax2.twinx()
-        ax2_rain.plot(valid_laps['LapNumber'], valid_laps['Rainfall'], 'g-')
-        ax2_rain.set_ylabel('Rainfall (mm/h)', color='green')
+        # Rainfall Plot
+        ax2.plot(valid_laps['LapNumber'], valid_laps['LapTime_sec'], 
+                color='#FF1801', linewidth=2)
+        ax2.set_xlabel('Lap Number', 
+                      color='white', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('Lap Time (seconds)', 
+                      color='white', fontsize=12, fontweight='bold')
+        ax2.tick_params(colors='white')
+        ax2.grid(alpha=0.3, linestyle='--')
+        
+        ax_rain = ax2.twinx()
+        ax_rain.plot(valid_laps['LapNumber'], valid_laps['Rainfall'], 
+                    color='#CCFF00', linewidth=2, linestyle='-.', label='Rainfall')
+        ax_rain.set_ylabel('Rainfall (mm/h)', 
+                          color='#CCFF00', fontsize=12, fontweight='bold')
+        ax_rain.tick_params(axis='y', colors='#CCFF00')
 
-        # Save plot to bytes
-        img = BytesIO()
-        plt.savefig(img, format='png', bbox_inches='tight')
+        # Add legends
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax_temp.get_legend_handles_labels()
+        ax1.legend(lines1 + lines2, labels1 + labels2, 
+                 loc='upper left', 
+                 framealpha=0.2, 
+                 facecolor='black',
+                 fontsize=10)
+
+        lines3, labels3 = ax_rain.get_legend_handles_labels()
+        ax_rain.legend(lines3, labels3,
+                      loc='upper right',
+                      framealpha=0.2,
+                      facecolor='black',
+                      fontsize=10)
+
+        # Adjust layout
+        plt.tight_layout(pad=3.0)
+        
+        # Save to buffer
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
         plt.close()
-        img.seek(0)
-        plot_url = base64.b64encode(img.getvalue()).decode('utf-8')
-
+        
         return {
             'success': True,
-            'plot': plot_url,
-            'temp_corr': float(temp_corr) if not np.isnan(temp_corr) else None,
-            'rain_corr': float(rain_corr) if not np.isnan(rain_corr) else None
+            'plot': base64.b64encode(buf.getvalue()).decode('utf-8'),
+            'temp_corr': float(temp_corr),
+            'rain_corr': float(rain_corr) if rain_corr else None
         }
-
+        
     except Exception as e:
         return {'success': False, 'error': str(e)}
