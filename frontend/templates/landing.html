@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Analytics Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --f1-red: #FF1801;
+            --dark-bg: #0A0A0A;
+            --carbon: #1A1A1A;
+            --text: #FFFFFF;
+            
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--dark-bg) url('/static/background1.jpeg') no-repeat center center fixed;
+
+    background-size: cover;
+    color: var(--text);
+    font-family: 'Titillium Web', sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+        .header {
+            padding: 1.5rem 2rem;
+            background: var(--carbon);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--f1-red);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .hero {
+            padding: 6rem 2rem 3rem;
+            text-align: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero h1 span {
+            color: var(--f1-red);
+            display: block;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #CCCCCC;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tools-grid {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .analysis-card {
+            background: var(--carbon);
+            border-radius: 8px;
+            padding: 2rem;
+            border-left: 4px solid var(--f1-red);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .analysis-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(255,24,1,0.1);
+        }
+
+        .card-title {
+            color: var(--f1-red);
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .card-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: var(--f1-red);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 1.5rem;
+            transition: opacity 0.3s ease;
+        }
+
+        .card-link:hover {
+            opacity: 0.9;
+        }
+
+        .historical-section {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+
+        .year-select {
+            width: 100%;
+            padding: 1rem;
+            background: var(--carbon);
+            color: var(--text);
+            border: 2px solid var(--f1-red);
+            border-radius: 4px;
+            margin: 2rem 0;
+            font-size: 1rem;
+        }
+
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            color: #888;
+            padding: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .error {
+            color: var(--f1-red);
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255,24,1,0.1);
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .tools-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 1rem;
+            }
+            
+            .logo {
+                font-size: 1.4rem;
+            }
+            
+            .hero {
+                padding: 4rem 1rem 2rem;
+            }
+            
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">F1 Analytics Pro</div>
+    </header>
+
+    <section class="hero">
+        <h1><span>Formula 1</span>Data Intelligence Platform</h1>
+        <p>Advanced analytics tools for professionals and enthusiasts leveraging 70+ years of historical racing data</p>
+    </section>
+
+    <div class="tools-grid">
+        <div class="analysis-card">
+            <div>
+                <h3 class="card-title">Weather Impact Analysis</h3>
+                <p>Correlate weather conditions with race performance metrics</p>
+            </div>
+            <a href="/weather" class="card-link">Launch Tool →</a>
+        </div>
+
+        <div class="analysis-card">
+            <div>
+                <h3 class="card-title">Historical Comparison</h3>
+                <p>Compare race strategies and outcomes across decades</p>
+            </div>
+            <a href="#historical" class="card-link">Explore History →</a>
+        </div>
+    </div>
+
+    <section class="historical-section" id="historical">
+        <h2>Team Data</h2>
+        <select class="year-select" id="yearSelect">
+            <option value="">Select Season Year</option>
+        </select>
+        <div class="teams-grid" id="teamsGrid"></div>
+        <div class="loading" id="loading">Loading historical data...</div>
+        <div class="error" id="error" style="display: none"></div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Year selector initialization
+            const yearSelect = document.getElementById('yearSelect');
+            const currentYear = new Date().getFullYear();
+            
+            for (let year = currentYear; year >= 1950; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+
+            // Team loading function
+            async function loadTeams(year) {
+                const grid = document.getElementById('teamsGrid');
+                const loading = document.getElementById('loading');
+                const error = document.getElementById('error');
+
+                grid.innerHTML = '';
+                loading.style.display = 'block';
+                error.style.display = 'none';
+
+                try {
+                    const response = await fetch(`/api/teams?year=${year}`);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const teams = await response.json();
+
+                    teams.forEach(team => {
+                        const card = document.createElement('div');
+                        card.className = 'team-card';
+                        card.innerHTML = `
+                            <div class="team-name">${team.name}</div>
+                            ${team.drivers.map(driver => `
+                                <div class="driver-item">
+                                    ${driver.image ? 
+                                        `<img src="${driver.image}" class="driver-image" alt="${driver.name}">` : 
+                                        `<div class="driver-image-placeholder"></div>`}
+                                    <div>
+                                        <h4>${driver.name}</h4>
+                                        <p>#${driver.number} | ${driver.code}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        `;
+                        grid.appendChild(card);
+                    });
+
+                } catch (err) {
+                    error.textContent = `Failed to load team data: ${err.message}`;
+                    error.style.display = 'block';
+                } finally {
+                    loading.style.display = 'none';
+                }
+            }
+
+            // Event listeners
+            yearSelect.addEventListener('change', function(e) {
+                if (e.target.value) loadTeams(e.target.value);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Weather Impact Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #FF1801;
+            --carbon: #111111;
+        }
+        body {
+    font-family: 'Titillium Web', sans-serif;
+    background: #000 url('/static/weather.jpeg') no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+    margin: 0;
+    padding: 2rem;
+}
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        nav a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        h2 {
+            color: var(--accent);
+            margin: 1.5rem 0;
+            font-size: 1.4rem;
+        }
+        .analysis-explanation, .interpretation {
+            background: var(--carbon);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+        .legend, .correlation-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .legend-item, .correlation-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .legend-color, .correlation-badge {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        .correlation-badge {
+            display: inline-block;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
+        }
+        .results {
+            margin-top: 2rem;
+            background: var(--carbon);
+            padding: 1.5rem;
+            border-radius: 8px;
+            display: none;
+        }
+        .error {
+            color: #F1C232;
+            font-weight: bold;
+        }
+        fieldset {
+            border: none;
+            margin: 1rem 0;
+            width: 100%;
+        }
+        label, select, button {
+            display: block;
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+        select, button {
+            padding: 0.6rem;
+            border-radius: 4px;
+            border: none;
+            font-size: 1rem;
+        }
+        button {
+            background: var(--accent);
+            color: #000;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<main class="container">
+    <nav><a href="/">&larr; Home</a></nav>
+    <h1>🏎 F1 Weather Impact Analysis</h1>
+
+    <section class="analysis-explanation">
+        <h2>How Our Analysis Works</h2>
+        <p>We combine official lap timing data with trackside weather measurements and use statistical analysis to show how conditions impact performance:</p>
+        <ul>
+            <li>📊 Merge lap times with temperature & rainfall data</li>
+            <li>🔍 Filter for valid, completed laps</li>
+            <li>🌡 Compute correlation between track temperature and lap times</li>
+            <li>🌧 Compute correlation between rainfall intensity and lap times</li>
+            <li>🔄 Pearson correlation coefficients range from -1 (inverse) to 1 (direct)</li>
+        </ul>
+    </section>
+
+    <form id="analysis-form">
+        <fieldset>
+            <label for="year">Year</label>
+            <select id="year"></select>
+        </fieldset>
+        <fieldset>
+            <label for="gp">Grand Prix</label>
+            <select id="gp"></select>
+        </fieldset>
+        <fieldset>
+            <label for="driver">Driver</label>
+            <select id="driver"></select>
+        </fieldset>
+        <fieldset>
+            <label for="session_type">Session Type</label>
+            <select id="session_type">
+                <option value="R">Race</option>
+                <option value="Q">Qualifying</option>
+                <option value="S">Sprint</option>
+            </select>
+        </fieldset>
+        <button type="submit">Analyze</button>
+    </form>
+
+    <section class="results" id="results" aria-labelledby="results-heading">
+        <h2 id="results-heading">Analysis Results</h2>
+        <img id="plot" alt="Analysis Plot">
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF1801"></div><span>Lap Times (s)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00FFFF; border: 1px dashed #00FFFF"></div><span>Track Temp (°C)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #CCFF00; border: 1px dashed #CCFF00"></div><span>Rainfall (mm/h)</span>
+            </div>
+        </div>
+
+        <div id="correlations"></div>
+
+        <div class="interpretation" id="interpretation">
+            <h2>Understanding the Graph</h2>
+            <p>The top plot shows lap times (red) vs. track temperature (cyan).<br>
+            The bottom plot shows lap times (red) vs. rainfall intensity (yellow).<br>
+            Left axis: lap time (seconds). Right axis: weather metrics.</p>
+            <p>Look for lines moving together to see potential impacts.</p>
+        </div>
+    </section>
+
+    <section class="analysis-explanation">
+        <h2>Interpreting Correlation Values</h2>
+        <p>Coefficients range from -1 to 1:</p>
+        <div class="correlation-list">
+            <div class="correlation-item">
+                <span class="correlation-badge" style="background: #550000"></span><span>0.7 to 1.0: Strong positive (slower in heat/rain)</span>
+            </div>
+            <div class="correlation-item">
+                <span class="correlation-badge" style="background: #005500"></span><span>-0.7 to -1.0: Strong negative (faster in heat/rain)</span>
+            </div>
+            <div class="correlation-item">
+                <span class="correlation-badge" style="background: #111111"></span><span>-0.3 to 0.3: Weak/no link</span>
+            </div>
+        </div>
+        <p>Note: Correlation ≠ causation—other factors (tires, strategy) also play roles.</p>
+    </section>
+</main>
+
+<script>
+// Initialize dropdowns and event handlers
+window.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('analysis-form');
+    form.addEventListener('submit', e => { e.preventDefault(); analyze(); });
+    loadDropdowns();
+});
+
+async function loadDropdowns() {
+    const years = await fetch('/api/years').then(r => r.json());
+    const yearSelect = document.getElementById('year');
+    years.forEach(y => yearSelect.add(new Option(y, y)));
+    yearSelect.value = years[years.length - 1];
+    await updateGPS(yearSelect.value);
+    document.getElementById('year').addEventListener('change', e => updateGPS(e.target.value));
+}
+
+async function updateGPS(year) {
+    const gps = await fetch(`/api/gps?year=${year}`).then(r => r.json());
+    const gpSelect = document.getElementById('gp');
+    gpSelect.innerHTML = '';
+    gps.forEach(e => gpSelect.add(new Option(e.name, e.name)));
+    await updateDrivers(year);
+    gpSelect.addEventListener('change', () => updateDrivers(year));
+}
+
+async function updateDrivers(year) {
+    const gp = document.getElementById('gp').value;
+    const sessionType = document.getElementById('session_type').value;
+    const driverSelect = document.getElementById('driver');
+    driverSelect.innerHTML = '';
+    
+    try {
+        const response = await fetch(`/api/drivers?year=${year}&gp=${encodeURIComponent(gp)}&session_type=${sessionType}`);
+        if (!response.ok) throw new Error('Failed to fetch drivers');
+        const drivers = await response.json();
+        drivers.forEach(d => driverSelect.add(new Option(d, d)));
+    } catch (error) {
+        console.error('Error loading drivers:', error);
+        driverSelect.add(new Option('No drivers available', ''));
+    }
+}
+
+// Add event listeners for session type and GP changes
+document.getElementById('session_type').addEventListener('change', () => {
+    const year = document.getElementById('year').value;
+    updateDrivers(year);
+});
+
+document.getElementById('gp').addEventListener('change', () => {
+    const year = document.getElementById('year').value;
+    updateDrivers(year);
+});
+
+async function analyze() {
+    document.getElementById('results').style.display = 'none';
+    const data = {
+        year: document.getElementById('year').value,
+        gp: document.getElementById('gp').value,
+        driver: document.getElementById('driver').value,
+        session_type: document.getElementById('session_type').value
+    };
+    const res = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    const results = document.getElementById('results');
+    if (!json.success) {
+        results.innerHTML = `<p class="error">${json.error}</p>`;
+        results.style.display = 'block';
+        return;
+    }
+
+    document.getElementById('plot').src = json.plot_url;
+    document.getElementById('correlations').innerHTML = `
+        <h2>Statistical Relationships</h2>
+        <p>Track Temperature Correlation: 
+            <span class="correlation-badge" style="${getCorrelationColor(json.temp_corr)}">
+                ${json.temp_corr?.toFixed(2) ?? 'N/A'}
+            </span>
+            ${interpretCorrelation(json.temp_corr, 'temperature')}
+        </p>
+        <p>Rainfall Correlation: 
+            <span class="correlation-badge" style="${getCorrelationColor(json.rain_corr)}">
+                ${json.rain_corr?.toFixed(2) ?? 'N/A'}
+            </span>
+            ${interpretCorrelation(json.rain_corr, 'rainfall')}
+        </p>
+    `;
+
+    if (json.rain_corr === null) {
+        document.getElementById('interpretation').innerHTML += `
+            <div class="error" style="margin-top: 1rem;">
+                ⚠️ No rainfall data available for this session
+            </div>
+        `;
+    }
+
+    results.style.display = 'block';
+}
+
+function getCorrelationColor(value) {
+    if (value === null || value === undefined) return 'background: #333';
+    const absVal = Math.abs(value);
+    if (absVal > 0.7) return value > 0 ? 'background: #550000' : 'background: #005500';
+    if (absVal > 0.3) return value > 0 ? 'background: #330000' : 'background: #003300';
+    return 'background: #111111';
+}
+
+function interpretCorrelation(value, type) {
+    if (value === null || value === undefined) return '';
+    const absVal = Math.abs(value);
+    let strength = '';
+    if (absVal > 0.7) strength = 'strong';
+    else if (absVal > 0.3) strength = 'moderate';
+    else return '- No significant relationship detected';
+    const direction = value > 0 ? 'increases' : 'decreases';
+    const impact = value > 0 ? 'slower' : 'faster';
+    return `- ${strength} relationship: As ${type} ${direction}, lap times tend to be ${impact}`;
+}
+</script>
+</body>
+</html>
